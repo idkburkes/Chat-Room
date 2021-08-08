@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Chat Application</title>
+</head>
+<body>
+<form>
+    <input id="username" type="text">
+    <input onclick="login();" value="Login" type="button">
+</form>
+<form>
+    <input id="message" type="text">
+    <input onclick="wsSendMessage();" value="Send" type="button">
+    <input onclick="wsCloseConnection();" value="Disconnect" type="button">
+</form>
+
+<textarea id="echoText" rows="20" cols="80"></textarea>
+
+
+<script>
+var webSocket = new WebSocket("ws://localhost:8080/ChatServer/chat");
+var echoText = document.getElementById("echoText");
+echoText.value = "";
+var message = document.getElementById("message");
+
+
+//Functions
+webSocket.onopen = function(message){ wsOpen(message);};
+webSocket.onmessage = function(message){ wsGetMessage(message);};
+webSocket.onclose = function(message){ wsClose(message);};
+webSocket.onerror = function(event){ wsError(event);};
+
+//open
+function wsOpen(message){
+    //Get current Date and Time
+    var date = getDate();
+    var time = getTime();
+
+    echoText.value += "---- Welcome to Chat Server! ----- \n";
+    echoText.value += "Connected " + date + " " + time + "\n";
+}
+
+//Send message
+function wsSendMessage(){
+	var username = document.getElementById("username");
+    //Get current Time
+    var time = getTime();
+  
+    var fullMessage = time + " - " + username.value + " - " + message.value + "\n";
+    webSocket.send(fullMessage);
+    message.value = "";
+}
+
+//Close
+function wsCloseConnection(){
+    webSocket.close();
+}
+
+//Message Received 
+function wsGetMessage(event){
+    echoText.value +=  event.data + "\n";
+}
+
+//Connection Closed
+function wsClose(message){
+    echoText.value += "Disconnect ... \n";
+}
+
+//Error
+function wsError(message){
+    echoText.value += "Error...   \n";
+}
+
+//Get the current date in string format
+function getDate() {
+    var currentDate = new Date();
+    var day = currentDate.getDate();
+    var month = currentDate.getMonth() + 1;
+    var year = currentDate.getFullYear();
+    return  day + "/" + month + "/" + year;
+}
+
+//Get the current time in string format
+function getTime() {
+    var currentDate = new Date();
+    var hours = currentDate.getHours();
+    var minutes = currentDate.getMinutes();
+    return hours + ":" + minutes;
+}
+
+
+
+
+</script>
+
+
+</body>
+</html>
