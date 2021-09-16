@@ -7,31 +7,32 @@
 
   <style>
   
-  body {
-    background: grey;
-    margin: 0;
-  overflow: hidden;
-  }
+ 
   
-  #game {
-  	background-color: blue;
-  	width: 50%;
-  	height: 50%;
+  #sphere {
+  width: 75%;
+  height: 75%;
+    border: 4px solid #A0A0A0;
+                background: black;
+                display: block;
   }
   </style>
   
 
-<body>
+<body onload="init();">
 
 
-<textarea id="echoText" rows="5" cols="20"></textarea>
+
 
 <canvas id="game"> </canvas>
 
+<p> WebSocket Pong </p>
+<canvas id="sphere"></canvas>
 
+</body>
 
 <script>
-var webSocket = new WebSocket("ws://localhost:8080/ChatServer/chat");
+var webSocket = new WebSocket("ws://10.2.158.2:8080/ChatServer/chat");
 
 //Functions
 webSocket.onopen = function(message){ wsOpen(message);};
@@ -95,6 +96,8 @@ function wsError(message){
 const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 
+
+
 var grid = 10;
 var paddleSpeed = 3;
 var ballSpeed = 2;
@@ -129,14 +132,6 @@ const ball = {
 }
 
 
-//check for collision between two objects using axis-aligned bounding box (AABB)
-//@see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
-function collides(obj1, obj2) {
-return obj1.x < obj2.x + obj2.width &&
-      obj1.x + (obj1.width - 70) > obj2.x &&
-      obj1.y < obj2.y + obj2.height &&
-      obj1.y + (obj1.height - 60) > obj2.y;
-}
 
 
 //Event Listeners
@@ -186,7 +181,8 @@ function handleKeyPress(e) {
 function loop() {
 	window.requestAnimationFrame(loop); //Request frame update
 	context.clearRect(0,0,canvas.width,canvas.height); //Erase previous animation
-	 
+	context.fillStyle = "black";
+	context.fillText("WebSocket Pong", canvas.width-90, canvas.height-12);
 	
 	// move ball by its velocity
 	  ball.x += ball.dx;
@@ -255,16 +251,284 @@ function loop() {
 	  context.fillStyle = 'lightgrey';
 	  context.fillRect(0, 0, canvas.width, grid);
 	  context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
+	  
+	  
+}
+
+//check for collision between two objects using axis-aligned bounding box (AABB)
+//@see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
+function collides(obj1, obj2) {
+return obj1.x < obj2.x + obj2.width &&
+      obj1.x + obj1.width > obj2.x &&
+      obj1.y < obj2.y + obj2.height &&
+      obj1.y + obj1.height > obj2.y;
 }
 
 //Start the game
 window.requestAnimationFrame(loop);
 
+</script>
 
 
 
 
 
+
+<script>
+//----------------------------------- 3D Sphere ----------------------
+
+//https://github.com/drivo/Canvas3dSphere
+var canvas2 = document.getElementById('sphere');
+var contextSphere = canvas2.getContext('2d');
+
+var sphere = new Sphere3D();
+var rotation = 0;
+var distance = 0;
+var sphereSpeed = 2;
+var grid = 10;
+
+//Constructor for each point
+function Point3D() {
+  this.x = 0;
+  this.y = 0;
+  this.z = 0;
+}
+
+//Constructor for 3D Sphere Entity
+function Sphere3D(radius) {
+ this.point = new Array();
+ this.color = "rgb(100,0,255)"
+ this.radius = (typeof(radius) == "undefined") ? 10.0 : radius;
+ this.radius = (typeof(radius) != "number") ? 10.0 : radius;
+ this.numberOfVertexes = 0;
+ this.x = 0;
+ this.y = 0;
+ this.dx = -ballSpeed,
+ this.dy = ballSpeed
+
+ // Loop from 0 to 360 degrees with a pitch of 10 degrees ...
+  for(alpha = 0; alpha <= 6.28; alpha += 0.17) {
+   p = this.point[this.numberOfVertexes] = new Point3D();
+     
+   p.x = Math.cos(alpha) * this.radius;
+   p.y = 0;
+   p.z = Math.sin(alpha) * this.radius;
+
+   this.numberOfVertexes++;
+ }
+
+ // Loop from 0 to 90 degrees with a pitch of 10 degrees ...
+ // (direction = 1)
+ 
+ // Loop from 0 to 90 degrees with a pitch of 10 degrees ...
+ // (direction = -1)
+
+ for(var direction = 1; direction >= -1; direction -= 2) {
+   for(var beta = 0.17; beta < 1.445; beta += 0.17) {
+       
+     var radius = Math.cos(beta) * this.radius;
+     var fixedY = Math.sin(beta) * this.radius * direction;
+     
+     for(var alpha = 0; alpha < 6.28; alpha += 0.17) {
+       p = this.point[this.numberOfVertexes] = new Point3D();
+
+       p.x = Math.cos(alpha) * radius;
+       p.y = fixedY;
+       p.z = Math.sin(alpha) * radius;
+
+       this.numberOfVertexes++;
+     }
+   }
+ }
+}
+
+	//Utility method to rotate point by X in a 3D space
+	function rotateX(point, radians) {
+	   var y = point.y;
+	   point.y = (y * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
+	   point.z = (y * Math.sin(radians)) + (point.z * Math.cos(radians));
+	}
+
+	//Utility method to rotate point by Y in a 3D space
+	function rotateY(point, radians) {
+	   var x = point.x;
+	   point.x = (x * Math.cos(radians)) + (point.z * Math.sin(radians) * -1.0);
+	   point.z = (x * Math.sin(radians)) + (point.z * Math.cos(radians));
+	}
+
+	// Utility method to rotate point by Z in a 3D space
+	function rotateZ(point, radians) {
+	   var x = point.x;
+	   point.x = (x * Math.cos(radians)) + (point.y * Math.sin(radians) * -1.0);
+	   point.y = (x * Math.sin(radians)) + (point.y * Math.cos(radians));
+	}
+
+	// Utility method to project a 3D point a a 2D surface
+	function projection(xy, z, xyOffset, zOffset, distance) {
+	   return ((distance * xy) / (z - zOffset)) + xyOffset;
+	}
+	
+	//Init function called upon client startup
+	function init(){
+		   // Set framerate to 30 fps
+		   console.log('init function called');
+		   setInterval(function() {
+			   render();
+		   }, 1000 / 30);
+		}
+	
+	//Render 3D Sphere Image
+	function render() {
+		var width = canvas2.width;
+		var height = canvas2.height;
+		var x, y;
+		var p = new Point3D();
+			
+		contextSphere.save();
+		contextSphere.clearRect(0, 0, width, height);
+		contextSphere.globalCompositeOperation = "destination-over";
+		
+		//Draw Paddles
+		contextSphere.fillStyle = 'white';
+		contextSphere.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+		contextSphere.fillRect(paddle2.x, paddle2.y, paddle2.width, paddle2.height);
+		
+		//Draw walls
+		contextSphere.fillStyle = 'lightgrey';
+		contextSphere.fillRect(0, 0, canvas2.width, 10);
+		contextSphere.fillRect(0, canvas2.height - grid, canvas2.width, canvas2.height);
+		
+		//Physics for movement and collisions
+		executeSpherePhysics();
+		
+		//Draw each point in the 3D Sphere 
+		   for(i = 0; i < sphere.numberOfVertexes; i++) {
+		     p.x = sphere.point[i].x;
+		     p.y = sphere.point[i].y;
+		     p.z = sphere.point[i].z;
+
+		     rotateX(p, rotation);
+		     rotateY(p, rotation);
+		     rotateZ(p, rotation);
+
+		     x = projection(p.x, p.z, width/2.0, 100.0, distance) + sphere.x;
+		     y = projection(p.y, p.z, height/2.0, 100.0, distance) + sphere.y;
+
+		     //Prevent sphere going through wall by changing its velocity
+		     detectBorder(x,y);
+		     
+			//Prevent sphere from going through paddles by changing its velocity
+			detectPaddle(x,y);
+		    	 
+		     
+		     if((x >= 0) && (x < width)) {
+		       if((y >= 0) && (y < height)) {
+		         if(p.z < 0) {
+		           drawPoint(contextSphere, x, y, .8, "rgba(140,0,0,0.6)");
+		         } else {
+		           drawPointWithGradient(contextSphere, x, y, .8, "rgb(200,113,0)", 0.8);
+		         }
+		       }
+		     }                    
+		   }
+		
+		   
+		   
+		   contextSphere.restore();
+			contextSphere.fillStyle = "rgb(150,150,150)";
+			
+			rotation += Math.PI/90.0;
+			//Determine max distance from center
+			if(distance < 175) {
+				distance += 30;
+			}
+			
+			
+		}
+	
+	
+	//Change position based on current velocity	
+	function executeSpherePhysics() {
+		//Sphere Movement
+		 sphere.x += sphere.dx;
+		 sphere.y += sphere.dy;
+	}
+
+	// Detect if sphere collides with border
+	function detectBorder(x, y) {
+		var collision = false;
+		// prevent sphere from going through walls by changing its velocity
+		  if (y < grid) {
+		    y = grid;
+		    sphere.dy *= -1;
+		    collision = true;
+		  }
+		  else if (y > canvas2.height - grid) {
+		    y = canvas2.height - grid * 2;
+		    sphere.dy *= -1;
+		    collision = true;
+		  }
+		return collision;
+	}
+	
+	
+	//check for collision between two objects using axis-aligned bounding box (AABB)
+	//@see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
+	function collidesWithPaddle(x, y, obj) {
+	return x < obj.x + obj.width &&
+	      x > obj.x &&
+	      y < obj.y + obj.height &&
+	      y > obj.y;
+	}
+	
+	//Detect if sphere collides with paddle
+	function detectPaddle(x, y) {
+		  // check to see if ball collides with paddle. if they do change x velocity
+		  if (collidesWithPaddle(x, y, paddle)) {
+		    sphere.dx *= -1;
+		    // move ball next to the paddle otherwise the collision will happen again
+		    // in the next frame
+		    x = paddle.x + paddle.width;
+		  }
+		  else if (collidesWithPaddle(x, y, paddle2)) {
+		    sphere.dx *= -1;
+		    // move ball next to the paddle otherwise the collision will happen again
+		    // in the next frame
+		    x = paddle2.x;
+		  }
+	}
+	
+	
+	// This method draws a single point (a vertex of 3D sphere) in the canvas
+	function drawPoint(context, x, y, size, color) {
+		  context.save();
+		  context.beginPath();
+		  context.fillStyle = color;
+		  context.arc(x, y, size, 0, 2*Math.PI, true);
+		  context.fill();
+		  context.restore();
+		}
+	
+	
+	// This method draws a single point with gradient (a vertex of 3D sphere) in the canvas
+	function drawPointWithGradient(ctx, x, y, size, color, gradient) {
+		var reflection;
+		reflection = size / 4;
+
+		ctx.save();
+		ctx.translate(x, y);
+		var radgrad = ctx.createRadialGradient(-reflection,-reflection,reflection,0,0,size);
+
+		radgrad.addColorStop(0, 'rgba(255,0,0)');
+		radgrad.addColorStop(gradient, color);
+		radgrad.addColorStop(1, 'rgba(1,159,98,0)');
+
+		ctx.fillStyle = radgrad;
+		ctx.fillRect(-size,-size,size*2,size*2);
+		ctx.restore();
+	}
+
+	
 
 </script>
 
@@ -277,7 +541,7 @@ window.requestAnimationFrame(loop);
 
 
 
-</body>
+
 
 
 
